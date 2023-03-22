@@ -6,6 +6,7 @@
 #include <chrono>
 #include <iomanip>
 #include <array>
+#include <omp.h>
 
 inline constexpr std::size_t N = 6u;
 inline constexpr std::size_t M = 8u;
@@ -30,7 +31,8 @@ int main() {
         return std::accumulate(row.cbegin(), row.cend(), acc);
       });
       std::ostringstream toPrint;
-      toPrint << std::fixed << std::setprecision(PRECISION) << "Average: " << sum / double(N * M) << std::endl;
+      toPrint << "Current thread ID: " << omp_get_thread_num() << std::endl
+              << "Average: " << std::fixed << std::setprecision(PRECISION) << sum / double(N * M) << std::endl;
       std::cout << toPrint.str();
     }
 #pragma omp section
@@ -45,7 +47,8 @@ int main() {
         }
       }
       std::ostringstream toPrint;
-      toPrint << "Min: " << minElement << std::endl
+      toPrint << "Current thread ID: " << omp_get_thread_num() << std::endl
+              << "Min: " << minElement << std::endl
               << "Max: " << maxElement << std::endl;
       std::cout << toPrint.str();
     }
@@ -60,7 +63,8 @@ int main() {
         }
       }
       std::ostringstream toPrint;
-      toPrint << "Count of element than multiple of " << MULTIPLE_OF << ": " << countOfMultiple << std::endl;
+      toPrint << "Current thread ID: " << omp_get_thread_num() << std::endl
+              << "Count of element than multiple of " << MULTIPLE_OF << ": " << countOfMultiple << std::endl;
       std::cout << toPrint.str();
     }
   }
