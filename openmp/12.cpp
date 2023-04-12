@@ -26,11 +26,12 @@ int main() {
   std::int32_t mx = ninf;
 #pragma omp parallel for num_threads(8) shared(mx)
   for (std::size_t i = 0u; i < N; ++i) {
-    if (array[i] % DIVIDER == 0 && array[i] > mx) {
-      omp_set_lock(&lock);
+    if (array[i] % DIVIDER != 0) continue ;
+    omp_set_lock(&lock);
+    if (array[i] > mx) {
       mx = array[i];
-      omp_unset_lock(&lock);
     }
+    omp_unset_lock(&lock);
   }
 
   if (mx == ninf) {
