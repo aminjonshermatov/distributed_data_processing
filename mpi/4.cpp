@@ -1,12 +1,12 @@
 //
 // Created by aminjon on 4/18/23.
 //
-#include <iostream>
-#include <random>
 #include <chrono>
-#include <iomanip>
 #include <functional>
+#include <iomanip>
+#include <iostream>
 #include <mpi.h>
+#include <random>
 
 inline constexpr int N = 30;
 inline constexpr int PRECISION = 15;
@@ -24,7 +24,7 @@ inline constexpr auto ninf = std::numeric_limits<int>::min();
 inline std::mt19937 rnd(std::chrono::steady_clock::now().time_since_epoch().count());
 inline std::uniform_int_distribution<int> rnd_range(LB, RB);
 
-inline std::array<int, N> array{};
+inline std::array<int, N> array{}, recv_buf{};
 
 typedef long double ld;
 
@@ -36,8 +36,16 @@ int main(int argc, char *argv[]) {
   int cur_proc;
   MPI_Comm_rank(MPI_COMM_WORLD, &cur_proc);
 
+  const int per_proc = (N + n_procs - 1) / n_procs;
+  std::vector<int> send_cnt(n_procs, per_proc), offsets(n_procs);
+  for (int proc_id = 1; proc_id < n_procs; ++proc_id) {
+    offsets[proc_id] = per_proc * (proc_id - 1);
+  }
+  send_cnt[0] = N - (n_procs - 1) * per_proc;
+  offsets[0] = (n_procs - 1) * per_proc;
+
   if (cur_proc == MASTER_PROC) {
-    [&](){
+    [&]() {
       std::generate(array.begin(), array.end(), std::bind(rnd_range, std::ref(rnd)));
       std::cout << '[';
       for (std::size_t i = 0u; i < N; ++i) {
@@ -46,72 +54,43 @@ int main(int argc, char *argv[]) {
       }
       std::cout << ']' << std::endl;
     }();
+  }
 
-    const int per_proc = (N + n_procs - 1) / n_procs;
-    int used = 0;
-    for (int proc_id = 1; proc_id < n_procs; ++proc_id) {
-      MPI_Send(&per_proc,
-               1,
+  MPI_Scatterv(array.data(),
+               send_cnt.data(),
+               offsets.data(),
                MPI_INT,
-               proc_id,
-               SEND_LEN_TAG,
-               MPI_COMM_WORLD);
-      MPI_Send(array.data() + per_proc * (proc_id - 1),
-               per_proc,
+               recv_buf.data(),
+               N,
                MPI_INT,
-               proc_id,
-               SEND_ARRAY_PTR_TAG,
+               MASTER_PROC,
                MPI_COMM_WORLD);
-      used += per_proc;
-    }
 
-    ld sum = 0;
-    for (int i = used; i < N; ++i) {
-      sum += array[i];
-    }
+  int loc = 0;
+  for (int i = 0; i < send_cnt[cur_proc]; ++i) {
+    loc += recv_buf[i];
+  }
 
-    for (int proc_id = 1; proc_id < n_procs; ++proc_id) {
-      ld partial;
+  int ans;
+  if (cur_proc == MASTER_PROC) {
+    ans = loc;
+    for (int i = 1; i < n_procs; ++i) {
+      int tmp;
       MPI_Status status;
-      MPI_Recv(&partial,
+      MPI_Recv(&tmp,
                1,
-               MPI_LONG_DOUBLE,
+               MPI_INT,
                MPI_ANY_SOURCE,
                SEND_PARTIAL_TAG,
                MPI_COMM_WORLD,
                &status);
-      sum += partial;
+      ans += tmp;
     }
-
-    auto avg = sum / N;
-    std::cout << "Average: " << std::setprecision(PRECISION) << avg << std::endl;
+    std::cout << "Average: " << std::setprecision(PRECISION) << ld(ans) / N << std::endl;
   } else {
-    int len;
-    std::array<int, N> tmp{};
-    MPI_Status status;
-    MPI_Recv(&len,
+    MPI_Send(&loc,
              1,
              MPI_INT,
-             MASTER_PROC,
-             SEND_LEN_TAG,
-             MPI_COMM_WORLD,
-             &status);
-    MPI_Recv(tmp.data(),
-             len,
-             MPI_INT,
-             MASTER_PROC,
-             SEND_ARRAY_PTR_TAG,
-             MPI_COMM_WORLD,
-             &status);
-
-    ld partial = 0;
-    for (int i = 0; i < len; ++i) {
-      partial += tmp[i];
-    }
-
-    MPI_Send(&partial,
-             1,
-             MPI_LONG_DOUBLE,
              MASTER_PROC,
              SEND_PARTIAL_TAG,
              MPI_COMM_WORLD);
