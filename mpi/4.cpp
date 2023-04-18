@@ -38,13 +38,14 @@ int main(int argc, char *argv[]) {
 
   const int per_proc = (N + n_procs - 1) / n_procs;
   std::vector<int> send_cnt(n_procs, per_proc), offsets(n_procs);
-  for (int proc_id = 1; proc_id < n_procs; ++proc_id) {
-    offsets[proc_id] = per_proc * (proc_id - 1);
-  }
-  send_cnt[0] = N - (n_procs - 1) * per_proc;
-  offsets[0] = (n_procs - 1) * per_proc;
 
   if (cur_proc == MASTER_PROC) {
+    for (int proc_id = 1; proc_id < n_procs; ++proc_id) {
+      offsets[proc_id] = per_proc * (proc_id - 1);
+    }
+    send_cnt[0] = N - (n_procs - 1) * per_proc;
+    offsets[0] = (n_procs - 1) * per_proc;
+
     [&]() {
       std::generate(array.begin(), array.end(), std::bind(rnd_range, std::ref(rnd)));
       std::cout << '[';
