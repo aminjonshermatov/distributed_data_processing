@@ -2,21 +2,19 @@
 // Created by aminjon on 4/19/23.
 //
 #include <chrono>
-#include <functional>
 #include <iostream>
 #include <mpi.h>
 #include <random>
 
-inline constexpr int N = 13;
-
-inline constexpr int MASTER_PROC = 0;
+inline constexpr std::size_t N = 10u;
+inline constexpr auto MASTER_PROC = 0;
 inline constexpr int SEND_LEN_TAG = 0;
 inline constexpr int SEND_ARRAY_TAG = 1;
 
 inline constexpr int LB = 1;
 inline constexpr int RB = 100;
 
-inline std::mt19937_64 rnd(std::chrono::steady_clock::now().time_since_epoch().count());
+inline std::mt19937_64 rnd_device(std::chrono::steady_clock::now().time_since_epoch().count());
 inline std::uniform_int_distribution<int64_t> rnd_range(LB, RB);
 
 inline std::array<int64_t, N> array{};
@@ -32,7 +30,7 @@ int main(int argc, char *argv[]) {
   if (cur_proc == MASTER_PROC) {
     [&]() {
       for (std::size_t i = 0u; i < N; ++i) {
-        array[i] = rnd_range(rnd);
+        array[i] = rnd_range(rnd_device);
       }
       for (std::size_t i = 0u; i < N; ++i) {
         std::cout << array[i] << (i + 1 < N ? ' ' : '\n');
@@ -57,13 +55,12 @@ int main(int argc, char *argv[]) {
       used += per_proc;
     }
 
-    std::cout << "# " << cur_proc << std::endl;
-    for (std::size_t i = used; i < N; ++i) {
-      std::cout << array[i] << (i + 1 < N ? ' ' : '\n');
+    auto rem = N - used;
+    std::array<int64_t, N> reversed{};
+    for (int i = N - 1; i >= used; --i) {
+      reversed[N - 1 - i] = array[i];
     }
 
-    std::array<int64_t, N> res{};
-    auto ptr = res.data();
     for (int proc_id = 1; proc_id < n_procs; ++proc_id) {
       int len;
       MPI_Status status;
@@ -83,20 +80,12 @@ int main(int argc, char *argv[]) {
                MPI_COMM_WORLD,
                &status);
 
-      for (auto x: tmp) {
-        *ptr = x;
-        ++ptr;
-      }
+      std::copy(tmp.begin(), tmp.end(), &reversed[rem + (n_procs - status.MPI_SOURCE - 1) * per_proc]);
     }
 
-    for (std::size_t i = used; i < N; ++i) {
-      *ptr = array[i];
-      ++ptr;
-    }
-
-    std::cout << "Result: " << std::endl;
+    std::cout << "Reversed: " << std::endl;
     for (std::size_t i = 0u; i < N; ++i) {
-      std::cout << res[i] << (i + 1 < N ? ' ' : '\n');
+      std::cout << reversed[i] << (i + 1 < N ? ' ' : '\n');
     }
   } else {
     int len;
@@ -116,11 +105,7 @@ int main(int argc, char *argv[]) {
              SEND_ARRAY_TAG,
              MPI_COMM_WORLD,
              &status);
-
-    std::cout << "# " << cur_proc << std::endl;
-    for (std::size_t i = 0u; i < len; ++i) {
-      std::cout << tmp[i] << (i + 1 < len ? ' ' : '\n');
-    }
+    std::reverse(tmp.begin(), tmp.end());
     MPI_Send(&len,
              1,
              MPI_INT,
