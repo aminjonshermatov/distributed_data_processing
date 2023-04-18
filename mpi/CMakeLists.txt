@@ -2,7 +2,7 @@ find_package(MPI REQUIRED)
 
 set(PROJECT mpi)
 
-set(LAST 2)
+set(LAST 3)
 
 foreach (prog RANGE 1 ${LAST})
     add_executable(${PROJECT}_${prog} ${prog}.cpp)
