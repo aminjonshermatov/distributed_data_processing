@@ -4,9 +4,11 @@
 #include <iostream>
 #include <random>
 #include <chrono>
+#include <iomanip>
 #include <mpi.h>
 
 inline constexpr int64_t N = 100'000'000;
+inline constexpr int PRECISION = 15;
 inline constexpr int64_t R = 10'000;
 
 inline constexpr int MASTER_PROC = 0;
@@ -72,7 +74,7 @@ int main(int argc, char *argv[]) {
     }
 
     ld pi = 4 * inside / N;
-    std::cout << "PI=" << pi << std::endl;
+    std::cout << "PI=" << std::setprecision(PRECISION) << pi << std::endl;
   } else {
     int cnt;
     MPI_Status status;
