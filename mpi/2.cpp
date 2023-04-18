@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
 
   if (cur_proc == MASTER_PROC) {
     [&](){
-      std::generate(array.begin(), array.end(), std::bind(rnd_range, rnd));
+      std::generate(array.begin(), array.end(), std::bind(rnd_range, std::ref(rnd)));
       std::cout << '[';
       for (std::size_t i = 0u; i < N; ++i) {
         std::cout << array[i];
