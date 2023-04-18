@@ -4,3 +4,4 @@ project(distributed_data_processing)
 set(CMAKE_CXX_STANDARD 20)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/openmp)
+add_subdirectory(${PROJECT_SOURCE_DIR}/mpi)
