@@ -31,8 +31,8 @@ public:
   T &at(std::size_t i) noexcept { return _data[i]; }
   T at(std::size_t i) const noexcept { return _data[i]; }
 
-  T *begin() { return _data; }
-  T *end() { return _data + _nCols * _nRows; }
+  T *begin() noexcept { return _data; }
+  T *end() noexcept { return _data + _nCols * _nRows; }
 
   T *data() noexcept { return _data; }
 };
