@@ -16,7 +16,7 @@ inline constexpr int SEND_LEN_TAG = 0;
 inline constexpr int SEND_ARRAY_PTR_TAG = 1;
 inline constexpr int SEND_PARTIAL_TAG = 2;
 
-inline constexpr int LB = 1;
+inline constexpr int LB = -10;
 inline constexpr int RB = 10;
 
 inline constexpr auto ninf = std::numeric_limits<int>::min();
@@ -67,30 +67,39 @@ int main(int argc, char *argv[]) {
                MASTER_PROC,
                MPI_COMM_WORLD);
 
-  int loc = 0;
+
+  std::array<int, 2> info{};
+  std::fill(info.begin(), info.end(), 0);
   for (int i = 0; i < send_cnt[cur_proc]; ++i) {
-    loc += recv_buf[i];
+    if (recv_buf[i] > 0) {
+      info[0] += recv_buf[i];
+      ++info[1];
+    }
   }
 
-  int ans;
   if (cur_proc == MASTER_PROC) {
-    ans = loc;
     for (int i = 1; i < n_procs; ++i) {
-      int tmp;
+      std::array<int, 2> tmp{};
       MPI_Status status;
-      MPI_Recv(&tmp,
-               1,
+      MPI_Recv(tmp.data(),
+               2,
                MPI_INT,
                MPI_ANY_SOURCE,
                SEND_PARTIAL_TAG,
                MPI_COMM_WORLD,
                &status);
-      ans += tmp;
+      for (std::size_t j = 0; j < 2; ++j) {
+        info[j] += tmp[j];
+      }
     }
-    std::cout << "Average: " << std::setprecision(PRECISION) << ld(ans) / N << std::endl;
+    if (info[1] == 0) {
+      std::cout << "There is not elements greater than zero" << std::endl;
+    } else {
+      std::cout << "Average: " << std::setprecision(PRECISION) << ld(info[0]) / info[1] << std::endl;
+    }
   } else {
-    MPI_Send(&loc,
-             1,
+    MPI_Send(info.data(),
+             2,
              MPI_INT,
              MASTER_PROC,
              SEND_PARTIAL_TAG,

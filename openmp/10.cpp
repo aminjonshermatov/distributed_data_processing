@@ -28,13 +28,13 @@ int main() {
 #pragma omp parallel num_threads(8) reduction(min:mn) reduction(max:mx)
   for (std::size_t i = 0u; i < N; ++i) {
     for (std::size_t j = 0u; j < M; ++j) {
-#pragma omp critical
       if (mn > array[i][j]) {
+#pragma omp critical
         mn = array[i][j];
       }
 
-#pragma omp critical
       if (mx < array[i][j]) {
+#pragma omp critical
         mx = array[i][j];
       }
     }
