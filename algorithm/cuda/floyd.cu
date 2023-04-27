@@ -58,8 +58,8 @@ int main() {
 
   static_assert(N <= INF / N + INF % N);// overflow
   int *dGraph = nullptr;
-  if ((err = cudaMalloc(&dGraph, N * N * sizeof(int))) != cudaSuccess) { std::cerr << "Failed while malloc dGraph_data: " << cudaGetErrorString(err) << std::endl; }
-  if ((err = cudaMemcpy(dGraph, hGraph, N * N * sizeof(int), cudaMemcpyHostToDevice)) != cudaSuccess) { std::cerr << "Failed while memcpy hGraph: " << cudaGetErrorString(err) << std::endl; }
+  if ((err = cudaMalloc(&dGraph, N * N * sizeof(int))) != cudaSuccess) { std::cerr << "Failed while malloc dGraph_data: " << cudaGetErrorString(err) << std::endl; std::exit(EXIT_FAILURE); }
+  if ((err = cudaMemcpy(dGraph, hGraph, N * N * sizeof(int), cudaMemcpyHostToDevice)) != cudaSuccess) { std::cerr << "Failed while memcpy hGraph: " << cudaGetErrorString(err) << std::endl; std::exit(EXIT_FAILURE); }
 
   dim3 blocks(BLOCKS_PER_SIDE, BLOCKS_PER_SIDE, 1);
   dim3 threadsPerBlock(THREADS_PER_BLOCK, THREADS_PER_BLOCK, 1);
@@ -71,9 +71,9 @@ int main() {
   cudaDeviceSynchronize();
   auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
 
-  if ((err = cudaGetLastError()) != cudaSuccess) { std::cerr << "Failed while launch kernel: " << cudaGetErrorString(err) << std::endl; }
+  if ((err = cudaGetLastError()) != cudaSuccess) { std::cerr << "Failed while launch kernel: " << cudaGetErrorString(err) << std::endl; std::exit(EXIT_FAILURE); }
 
-  if ((err = cudaMemcpy(hGraph, dGraph, N * N * sizeof(int), cudaMemcpyDeviceToHost)) != cudaSuccess) { std::cerr << "Failed while memcpy dGraph: " << cudaGetErrorString(err) << std::endl; }
+  if ((err = cudaMemcpy(hGraph, dGraph, N * N * sizeof(int), cudaMemcpyDeviceToHost)) != cudaSuccess) { std::cerr << "Failed while memcpy dGraph: " << cudaGetErrorString(err) << std::endl; std::exit(EXIT_FAILURE); }
 
 #ifdef PRINT_FINAL_MATRIX
   for (int i = 0; i < N; ++i) {
@@ -83,7 +83,7 @@ int main() {
   }
 #endif
 
-  if ((err = cudaFree(dGraph)) != cudaSuccess) { std::cerr << "Failed while free dGraph: " << cudaGetErrorString(err) << std::endl; }
+  if ((err = cudaFree(dGraph)) != cudaSuccess) { std::cerr << "Failed while free dGraph: " << cudaGetErrorString(err) << std::endl; std::exit(EXIT_FAILURE); }
 
   std::cout << "Duration: " << dur << std::endl;
 }
