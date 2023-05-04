@@ -17,7 +17,7 @@ std::random_device dev{};
 std::mt19937 rnd(dev());
 std::uniform_int_distribution<int> distribution(LB, UB);
 
-constexpr int N = 500;
+constexpr int N = 2880;
 constexpr int THREADS_PER_BLOCK = 16;// Each block have 16 * 16 = 256 threads
 constexpr int BLOCKS_PER_SIDE = (N + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 constexpr auto INF = std::numeric_limits<int>::max();
